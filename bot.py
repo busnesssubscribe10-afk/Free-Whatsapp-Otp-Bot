@@ -30,8 +30,8 @@ from telegram.ext import (
 DB_NAME = 'otp_bot.db'
 
 # বটের টোকেনসমূহ
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-FORWARDER_BOT_TOKEN = os.environ["FORWARDER_BOT_TOKEN"] # @mrprinceotps_bot (Admin in group)
+BOT_TOKEN = "8920102269:AAFMCsOM9iBJx0lZMmlS-_nR6sqdyl3-MFs"
+FORWARDER_BOT_TOKEN = "8777573519:AAFpMkzgcb_IJR2K3EzmeYUXlxo1UP1iNis" # @mrprinceotps_bot (Admin in group)
 
 ADMIN_ID = 8828657233
 

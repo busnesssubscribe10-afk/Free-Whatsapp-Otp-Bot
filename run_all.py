@@ -22,8 +22,8 @@ import time
 import threading
 from telethon.sync import TelegramClient
 
-API_ID = int(os.environ["API_ID"])
-API_HASH = os.environ["API_HASH"]
+API_ID = 37558252
+API_HASH = "d782da275d3804545c5119341f97d781"
 SESSION_NAME = 'userbot_session'
 
 def check_and_authenticate():

@@ -25,7 +25,7 @@ import asyncio
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 
 # কনফিগারেশন
-BOT_TOKEN = os.environ["FORWARDER_BOT_TOKEN"] # আপনার প্রদানকৃত ২য় টোকেন
+BOT_TOKEN = "8777573519:AAFpMkzgcb_IJR2K3EzmeYUXlxo1UP1iNis" # আপনার প্রদানকৃত ২য় টোকেন
 TARGET_GROUP_ID = -1004360634639
 DB_NAME = 'otp_bot.db'
 

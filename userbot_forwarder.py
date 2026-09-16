@@ -25,16 +25,16 @@ from telethon import TelegramClient, events
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 
 # ⚙️ কনফিগারেশন (আপনার Telegram API ক্রেডেনশিয়াল)
-API_ID = int(os.environ["API_ID"])
-API_HASH = os.environ["API_HASH"]
+API_ID = 37558252
+API_HASH = "d782da275d3804545c5119341f97d781"
 
 # চ্যাট ও গ্রুপ আইডি
 SOURCE_CHAT_ID = -1003406039344     # SOJIB METHOD WORLD (সোর্স চ্যানেল/গ্রুপ)
 TARGET_CHAT_ID = -1004360634639     # PRINCE 🤴 OTP 📥 GROUP (টার্গেট গ্রুপ)
 
 # বটের টোকেনসমূহ
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-FORWARDER_BOT_TOKEN = os.environ["FORWARDER_BOT_TOKEN"]
+BOT_TOKEN = "8920102269:AAFMCsOM9iBJx0lZMmlS-_nR6sqdyl3-MFs"
+FORWARDER_BOT_TOKEN = "8777573519:AAFpMkzgcb_IJR2K3EzmeYUXlxo1UP1iNis"
 
 # বাটন সেটিংস
 GET_NUMBER_URL = "https://t.me/mrprinceot2_bot"   # আপনার টেলিগ্রাম নাম্বার বট
