@@ -1,0 +1,35 @@
+﻿================================================================================
+          👑 PRINCE OTP BOT - IMAGE GENERATION PROMPTS (AI LOGO & BANNER)
+================================================================================
+এই প্রম্পটগুলো Midjourney, DALL·E 3, Bing Image Creator, Ideogram, বা Leonardo AI 
+যেকোনো এআই ইমেজ জেনারেটরে ব্যবহার করতে পারেন হাই-কোয়ালিটি লোগো ও অবতার তৈরি করার জন্য।
+
+--------------------------------------------------------------------------------
+1️⃣ MAIN BOT: "PRINCE OTP BOT" (বটের প্রধান লোগো / প্রোফাইল ছবি)
+--------------------------------------------------------------------------------
+📌 Style: Cyberpunk 3D Luxury Futuristic Robot Prince with Crown & WhatsApp Colors
+
+PROMPT:
+A stunning 3D futuristic luxury logo and profile avatar for "PRINCE OTP BOT". In the center, a charismatic cybernetic prince character wearing a glowing golden royal crown embedded with emerald neon jewels. The character has high-tech futuristic elements with neon green, cyber gold, and sleek metallic obsidian armor. In front, glowing holographic WhatsApp icons and secure digital lock shields with floating numeric OTP codes (e.g. 784-219). Bold premium 3D typography at the bottom reads "PRINCE OTP BOT". Neon green and golden aura, dark cybernetic background, cinematic volumetric lighting, 8k resolution, ultra-detailed, Unreal Engine 5 render, octane render style, masterpiece.
+
+---
+
+--------------------------------------------------------------------------------
+2️⃣ METHOD GROUP/CHANNEL: "PRINCE OTP METHOD" (মেথড গ্রুপ / চ্যানেল লোগো)
+--------------------------------------------------------------------------------
+📌 Style: Tech Strategy, VIP Shield, Digital Method & Secret Blueprint
+
+PROMPT:
+A premium 3D logo design for a Telegram channel named "PRINCE OTP METHOD". A golden royal prince crown resting on top of a glowing cybernetic shield and an open digital holographic book displaying binary codes, global communication networks, and WhatsApp green neon lightning bolts. Modern crypto-tech aesthetics, metallic gold, dark navy blue, and glowing emerald green palette. In the center or bottom, clean bold 3D futuristic typography reads "PRINCE OTP METHOD". Sleek, clean vector-style 3D badge icon, dark luxury carbon fiber background, rim lighting, studio lighting, hyper-detailed, 8k, professional branding.
+
+---
+
+--------------------------------------------------------------------------------
+3️⃣ PRIVATE OTP GROUP: "PRINCE OTP PRIVATE VIP" (মেইন প্রাইভেট ওটিপি গ্রুপ লোগো)
+--------------------------------------------------------------------------------
+📌 Style: Ultra Fast Lightning, VIP Private Vault, Live OTP Stream
+
+PROMPT:
+An ultra-luxurious 3D VIP badge logo for a private Telegram group named "PRINCE OTP VIP". A heavily fortified high-tech digital bank vault door opening up with bright neon green energy bursting out, surrounded by lightning fast speed lines and floating glowing 6-digit verification OTP codes. On top of the vault sits an elegant golden royal crown with diamond finish. Glowing neon text below reading "PRINCE OTP GROUP". High-tech particle effects, deep black background with green neon and golden reflections, dramatic lighting, high contrast, 8k resolution, photorealistic 3D render, luxury fintech and cyber security concept.
+
+================================================================================
