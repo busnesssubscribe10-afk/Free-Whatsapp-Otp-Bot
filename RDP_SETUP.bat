@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 title 🚀 PRINCE OTP BOT - 1-CLICK RDP SETUP & RUNNER
 color 0A
 chcp 65001 >nul
@@ -34,7 +34,6 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 if %errorlevel% neq 0 (
     color 0C
-    echo.
     echo ⚠️ Warning occurred during pip install, attempting direct install...
     python -m pip install python-telegram-bot telethon
 )
@@ -47,6 +46,12 @@ echo ================================================================
 echo 💡 System is starting. To stop at any time, press Ctrl + C.
 echo ================================================================
 echo.
-python run_all.py
 
-pause
+:RUN_LOOP
+python run_all.py
+echo.
+echo ================================================================
+echo ⚠️ System stopped. Restarting in 5 seconds... (Press Ctrl+C to cancel)
+echo ================================================================
+timeout /t 5 >nul
+goto RUN_LOOP

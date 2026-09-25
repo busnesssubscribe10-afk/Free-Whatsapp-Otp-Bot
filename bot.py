@@ -14,6 +14,7 @@ import re
 import datetime
 import logging
 import asyncio
+import time
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, Bot, CopyTextButton
 from telegram.ext import (
     ApplicationBuilder,
@@ -375,21 +376,28 @@ async def assign_numbers_and_show(query, country_name: str, user):
     conn = get_db_connection()
     c = conn.cursor()
 
-    c.execute("SELECT id, number FROM numbers WHERE country_name=? AND status='available' LIMIT ?",
+    c.execute("SELECT id, number FROM numbers WHERE country_name=? AND status='available' ORDER BY RANDOM() LIMIT ?",
               (country_name, NUMBERS_PER_REQUEST))
     rows = c.fetchall()
 
     if not rows:
         conn.close()
-        text = f"❌ <b>{country_name}</b> এর জন্য এই মুহূর্তে কোনো নম্বর খালি নেই।"
-        kb = [[InlineKeyboardButton("🔙 Back", callback_data="btn_back")]]
+        info = get_country_info(country_name)
+        text = (
+            f"❌ <b>{info['flag']} {info['name']}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"<i>⚠️ এই মুহূর্তে কোনো নম্বর খালি নেই। অন্য কোনো দেশ নির্বাচন করুন।</i>"
+        )
+        kb = [
+            [InlineKeyboardButton("🔄 Try Again", callback_data=f"sel_c_{country_name}")],
+            [InlineKeyboardButton("🌐 Change Country", callback_data="btn_back")]
+        ]
         await query.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
         return
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     info = get_country_info(country_name)
     buttons = []
-    num_text_body = ""
 
     for idx, row in enumerate(rows, 1):
         num_id, raw_num = row
@@ -402,25 +410,22 @@ async def assign_numbers_and_show(query, country_name: str, user):
         c.execute("INSERT INTO orders (user_id, country_name, number, clean_number) VALUES (?,?,?,?)",
                   (user.id, country_name, formatted, clean_full))
 
-        num_text_body += f"\n{info['flag']} Number {idx}: <code>{formatted}</code>\n"
-
-        btn_label = f"{info['flag']} 📄 {formatted}"
         # ১-ক্লিকেই সরাসরি ক্লিপবোর্ডে কপি করার জন্য CopyTextButton
+        btn_label = f"📋 {formatted}"
         buttons.append([InlineKeyboardButton(btn_label, copy_text=CopyTextButton(text=formatted))])
 
     c.execute("UPDATE users SET total_orders = total_orders + ? WHERE user_id=?", (len(rows), user.id))
     conn.commit()
     conn.close()
 
-    buttons.append([InlineKeyboardButton("🔴 Change Number", callback_data=f"sel_c_{country_name}")])
+    buttons.append([InlineKeyboardButton("🔄 Change Number", callback_data=f"sel_c_{country_name}")])
     buttons.append([InlineKeyboardButton("🌐 Change Country", callback_data="btn_back")])
     buttons.append([InlineKeyboardButton("📨 OTP Group ↗", url=MY_OTP_GROUP_URL)])
 
     header_text = (
-        f"<b>{info['flag']} {info['name']} ({info['short']}) 💬 WHATSAPP</b>\n"
+        f"✨ <b>{info['flag']} {info['name']} • N U M B E R S</b> ✨\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"{num_text_body}\n"
-        f"<i>👆 যেকোনো নম্বরের উপর ১-ক্লিক করলেই কপি হয়ে যাবে!</i>"
+        f"⚡ <i>Click any number below to <b>Copy Instantly</b>:</i>"
     )
 
     await query.edit_message_text(header_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
@@ -803,10 +808,12 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data.startswith("add_n_to_"):
         country = data.replace("add_n_to_", "")
+        info = get_country_info(country)
         admin_states[user_id] = {'action': 'waiting_for_numbers', 'country': country}
         await query.message.reply_text(
-            f"✅ দেশ: <b>{country}</b>\n\n"
-            f"এখন নম্বরগুলো মেসেজে লিখুন অথবা <b>.txt ফাইল আপলোড</b> করুন (প্রতি লাইনে একটি নম্বর)।",
+            f"📁 <b>{info['flag']} {country} এর জন্য নম্বর আপলোড করুন:</b>\n\n"
+            f"👉 আপনার <b>.txt ফাইল আপলোড করুন</b> অথবা নম্বরগুলো সরাসরি মেসেজে পাঠান (প্রতি লাইনে একটি নম্বর)।\n\n"
+            f"⚡ <i>বট স্বয়ংক্রিয়ভাবে ফাইল স্ক্যান করে ডুপ্লিকেট ও পূর্বে ব্যবহৃত নম্বর বাদ দিয়ে শুধু ফ্রেশ নম্বর যোগ করবে।</i>",
             parse_mode="HTML"
         )
         return
@@ -1077,6 +1084,8 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             country_name = state['country']
             numbers_list = []
 
+            status_msg = await update.message.reply_text("⏳ <i>ফাইল স্ক্যান করা হচ্ছে এবং ফ্রেশ নম্বর ফিল্টার করা হচ্ছে...</i>", parse_mode="HTML")
+
             try:
                 if update.message.document:
                     file = await context.bot.get_file(update.message.document.file_id)
@@ -1089,38 +1098,67 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 elif text:
                     numbers_list = [n.strip() for n in text.splitlines() if n.strip()]
             except Exception as ex:
-                await update.message.reply_text(f"⚠️ ফাইল পড়তে সমস্যা হয়েছে: {ex}")
+                await status_msg.edit_text(f"⚠️ ফাইল পড়তে সমস্যা হয়েছে: {ex}")
                 return
 
-            if numbers_list:
-                conn = get_db_connection()
-                c = conn.cursor()
-                added = 0
-                for num in numbers_list:
-                    clean = clean_digits(num)
-                    if not clean:
-                        continue
-                    formatted = format_number_with_code(clean, country_name)
-                    clean_full = clean_digits(formatted)
-
-                    c.execute("SELECT id FROM numbers WHERE country_name=? AND clean_number=?", (country_name, clean_full))
-                    if c.fetchone():
-                        continue
-                    c.execute("INSERT INTO numbers (country_name, number, clean_number) VALUES (?, ?, ?)",
-                              (country_name, formatted, clean_full))
-                    added += 1
-                conn.commit()
-                conn.close()
-
-                # 🎉 ওটিপি গ্রুপ এবং সকল ইউজারের বটের ইনবক্সে অটো স্টক অ্যানাউন্সমেন্ট পাঠানো!
-                sent_users = await announce_new_stock(context, country_name, added)
-                await update.message.reply_text(
-                    f"✅ <b>{added}</b> টি নম্বর <b>{country_name}</b> এর জন্য সফলভাবে যোগ করা হয়েছে!\n\n"
-                    f"📢 <b>{sent_users}</b> জন ইউজারের ইনবক্সে এবং ওটিপি গ্রুপে অটো স্টক অ্যানাউন্সমেন্ট পাঠানো হয়েছে।",
-                    parse_mode="HTML"
-                )
-
+            if not numbers_list:
+                await status_msg.edit_text("⚠️ ফাইলে বা মেসেজে কোনো নম্বর পাওয়া যায়নি।")
                 del admin_states[user_id]
+                return
+
+            conn = get_db_connection()
+            c = conn.cursor()
+            added = 0
+            skipped = 0
+            seen_in_batch = set()
+
+            for num in numbers_list:
+                clean = clean_digits(num)
+                if not clean or len(clean) < 6:
+                    skipped += 1
+                    continue
+                formatted = format_number_with_code(clean, country_name)
+                clean_full = clean_digits(formatted)
+
+                if clean_full in seen_in_batch:
+                    skipped += 1
+                    continue
+                seen_in_batch.add(clean_full)
+
+                # চেক করা নম্বরটি আগে থেকে numbers টেবিলে আছে কিনা
+                c.execute("SELECT id FROM numbers WHERE clean_number=?", (clean_full,))
+                if c.fetchone():
+                    skipped += 1
+                    continue
+
+                # চেক করা নম্বরটি পূর্বে ব্যবহৃত orders টেবিলে আছে কিনা
+                c.execute("SELECT id FROM orders WHERE clean_number=?", (clean_full,))
+                if c.fetchone():
+                    skipped += 1
+                    continue
+
+                c.execute("INSERT INTO numbers (country_name, number, clean_number) VALUES (?, ?, ?)",
+                          (country_name, formatted, clean_full))
+                added += 1
+
+            conn.commit()
+            conn.close()
+
+            info = get_country_info(country_name)
+            sent_users = 0
+            if added > 0:
+                sent_users = await announce_new_stock(context, country_name, added)
+
+            res_text = (
+                f"✅ <b>স্ক্যানিং ও আপলোড সম্পন্ন!</b>\n\n"
+                f"🌍 দেশ: <b>{info['flag']} {country_name}</b>\n"
+                f"📊 মোট স্ক্যানকৃত: <b>{len(numbers_list)}</b> টি\n"
+                f"✨ ফ্রেশ নম্বর যোগ হয়েছে: <b>{added}</b> টি\n"
+                f"⚠️ বাদ দেওয়া হয়েছে: <b>{skipped}</b> টি (ডুপ্লিকেট / পূর্বে ব্যবহৃত / অকার্যকর)\n\n"
+                f"📢 <b>{sent_users}</b> জন ইউজারের ইনবক্সে এবং ওটিপি গ্রুপে অটো স্টক অ্যানাউন্সমেন্ট পাঠানো হয়েছে।"
+            )
+            await status_msg.edit_text(res_text, parse_mode="HTML")
+            del admin_states[user_id]
             return
 
         if state['action'] == 'waiting_for_custom_traffic' and text:
@@ -1177,29 +1215,48 @@ async def group_listener(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # ═══════════════════════════════════════════════
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
+    while True:
+        try:
+            app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("admin", admin_panel))
-    app.add_handler(CallbackQueryHandler(callback_handler))
+            app.add_handler(CommandHandler("start", start))
+            app.add_handler(CommandHandler("admin", admin_panel))
+            app.add_handler(CallbackQueryHandler(callback_handler))
 
-    # যেকোনো গ্রুপ বা চ্যানেল থেকে রিসিভ হওয়া সব টাইপের বার্তা স্ক্যান
-    app.add_handler(MessageHandler(
-        filters.ALL & ~filters.COMMAND & ~filters.ChatType.PRIVATE,
-        group_listener
-    ))
+            # যেকোনো গ্রুপ বা চ্যানেল থেকে রিসিভ হওয়া সব টাইপের বার্তা স্ক্যান
+            app.add_handler(MessageHandler(
+                filters.ALL & ~filters.COMMAND & ~filters.ChatType.PRIVATE,
+                group_listener
+            ))
 
-    # ইনবক্স চ্যাট হ্যান্ডলার
-    app.add_handler(MessageHandler(
-        filters.ChatType.PRIVATE & (filters.TEXT | filters.Document.ALL) & ~filters.COMMAND,
-        text_handler
-    ))
+            # ইনবক্স চ্যাট হ্যান্ডলার
+            app.add_handler(MessageHandler(
+                filters.ChatType.PRIVATE & (filters.TEXT | filters.Document.ALL) & ~filters.COMMAND,
+                text_handler
+            ))
 
-    print("================================")
-    print("  PRINCE OTP BOT is running...")
-    print("================================")
+            print("================================")
+            print("  PRINCE OTP BOT is running...")
+            print("================================")
 
-    app.run_polling()
+            app.run_polling(drop_pending_updates=True, close_loop=False)
+            break
+        except (KeyboardInterrupt, SystemExit):
+            print("🛑 Bot stopped by user.")
+            break
+        except Exception as e:
+            err_str = str(e)
+            if "Conflict" in err_str or "terminated by other getUpdates request" in err_str:
+                print("\n" + "="*65)
+                print("⚠️ [CONFLICT DETECTED] অন্য কোনো পিসি বা টার্মিনালে এই বটটি চালু আছে!")
+                print("👉 টেলিগ্রামের নিয়ম অনুযায়ী একটি বট টোকেন দিয়ে একই সাথে ২ জায়গায়")
+                print("   বট চালু রাখা যায় না। আপনার আগের বটটি (যেমন লোকাল পিসিতে) বন্ধ করুন।")
+                print("⏳ ১০ সেকেন্ড পর অটোমেটিক আবার কানেক্ট করার চেষ্টা করা হচ্ছে...")
+                print("="*65 + "\n")
+                time.sleep(10)
+            else:
+                print(f"⚠️ [BOT ERROR] {e}")
+                time.sleep(5)
 
 
 if __name__ == '__main__':
