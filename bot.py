@@ -337,9 +337,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     welcome_text = (
-        f"👋 Welcome <b>{user.first_name}</b> to <b>PRINCE OTP BOT</b>\n\n"
-        f"🔥 <i>WhatsApp OTP System Online</i>\n\n"
-        f"👇 Click <b>🔥 Get Number</b> below to begin:"
+        f"╔══════════════════════════════════════╗\n"
+        f"║   👑 <b>PRINCE OTP VIP NETWORK</b> ⚡    ║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  👋 Welcome, <b>{user.first_name}</b>!\n"
+        f"║\n"
+        f"║  🟢 <b>Status:</b> <code>ONLINE (VIP HIGH-SPEED)</code>\n"
+        f"║  💬 <b>Service:</b> <code>WhatsApp OTP Delivery</code>\n"
+        f"║  💎 <b>Capacity:</b> <code>4 Numbers / Request</code>\n"
+        f"║  📋 <b>Feature:</b> <code>1-Click Native Copy</code>\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  👇 <i>নিচে দেশ সিলেক্ট করে নম্বর সংগ্রহ করুন:</i>\n"
+        f"╚══════════════════════════════════════╝"
     )
 
     await update.message.reply_text(welcome_text, parse_mode="HTML", reply_markup=get_bottom_keyboard())
@@ -387,7 +396,14 @@ async def show_country_selection(update: Update, context: ContextTypes.DEFAULT_T
     buttons.append([InlineKeyboardButton("🔙 Back", callback_data="btn_back")])
     conn.close()
 
-    text = "🌐 <b>Select Country for 💬 WHATSAPP :</b>"
+    text = (
+        f"╔══════════════════════════════════════╗\n"
+        f"║   🌐 <b>SELECT WHATSAPP COUNTRY</b> 💬    ║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  ⚡ <i>রিয়েলটাইম ফ্রেশ স্টক থেকে দেশ বেছে নিন:</i>\n"
+        f"║  💎 <i>প্রতি ক্লিকে ৪টি ফ্রেশ নম্বর পাবেন।</i>\n"
+        f"╚══════════════════════════════════════╝"
+    )
 
     if update.callback_query:
         try:
@@ -402,7 +418,40 @@ async def show_country_selection(update: Update, context: ContextTypes.DEFAULT_T
 #       💎 NUMBER ASSIGNMENT
 # ═══════════════════════════════════════════════
 
-async def assign_numbers_and_show(query, country_name: str, user):
+async def assign_numbers_and_show(query, country_name: str, user, is_change=False):
+    info = get_country_info(country_name)
+
+    # ── 🎬 Animated Transition Frame 1 ──
+    try:
+        if is_change:
+            anim_text_1 = (
+                f"🔄 <b>REGENERATING CARRIER ROUTE...</b>\n"
+                f"<code>[ ▰▰▰▰▱▱▱▱▱▱ ] 40%</code>\n\n"
+                f"📡 <i>Fetching 4 brand new {info['flag']} {info['name']} numbers...</i>"
+            )
+        else:
+            anim_text_1 = (
+                f"⚡ <b>CONNECTING SATELLITE GATEWAY...</b>\n"
+                f"<code>[ ▰▰▰▱▱▱▱▱▱▱ ] 30%</code>\n\n"
+                f"🛰️ <i>Allocating 4 Fresh Numbers for {info['flag']} <b>{info['name']}</b>...</i>"
+            )
+        await query.edit_message_text(anim_text_1, parse_mode="HTML")
+        await asyncio.sleep(0.35)
+    except Exception:
+        pass
+
+    # ── 🎬 Animated Transition Frame 2 ──
+    try:
+        anim_text_2 = (
+            f"🚀 <b>SECURING WHATSAPP VIP CHANNELS...</b>\n"
+            f"<code>[ ▰▰▰▰▰▰▰▰▱▱ ] 85%</code>\n\n"
+            f"💎 <i>Building 1-Click Fast Clipboards...</i>"
+        )
+        await query.edit_message_text(anim_text_2, parse_mode="HTML")
+        await asyncio.sleep(0.3)
+    except Exception:
+        pass
+
     conn = get_db_connection()
     c = conn.cursor()
 
@@ -412,11 +461,14 @@ async def assign_numbers_and_show(query, country_name: str, user):
 
     if not rows:
         conn.close()
-        info = get_country_info(country_name)
         text = (
-            f"❌ <b>{info['flag']} {info['name']}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"<i>⚠️ এই মুহূর্তে কোনো নম্বর খালি নেই। অন্য কোনো দেশ নির্বাচন করুন।</i>"
+            f"╔══════════════════════════════════════╗\n"
+            f"║   ❌ <b>STOCK EMPTY / স্টক খালি</b>            ║\n"
+            f"╠══════════════════════════════════════╣\n"
+            f"║  🌍 <b>Country:</b> {info['flag']} <b>{info['name']} ({info['short']})</b>\n"
+            f"║  ⚠️ <i>এই মুহূর্তে এই দেশের কোনো নম্বর খালি নেই।</i>\n"
+            f"║  💡 <i>দয়া করে অন্য কোনো দেশ নির্বাচন করুন।</i>\n"
+            f"╚══════════════════════════════════════╝"
         )
         kb = [
             [InlineKeyboardButton("🔄 Try Again", callback_data=f"sel_c_{country_name}")],
@@ -426,8 +478,9 @@ async def assign_numbers_and_show(query, country_name: str, user):
         return
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    info = get_country_info(country_name)
     buttons = []
+    num_list_text = ""
+    digit_emojis = ["➊", "➋", "➌", "➍", "➎", "➏"]
 
     for idx, row in enumerate(rows, 1):
         num_id, raw_num = row
@@ -440,25 +493,41 @@ async def assign_numbers_and_show(query, country_name: str, user):
         c.execute("INSERT INTO orders (user_id, country_name, number, clean_number) VALUES (?,?,?,?)",
                   (user.id, country_name, formatted, clean_full))
 
+        d_ico = digit_emojis[idx - 1] if idx <= len(digit_emojis) else f"{idx}."
+        num_list_text += f"║  {d_ico} <code>{formatted}</code>\n"
+
         # ১-ক্লিকেই সরাসরি ক্লিপবোর্ডে কপি করার জন্য CopyTextButton
-        btn_label = f"📋 {formatted}"
+        btn_label = f"📋 {d_ico} {formatted}"
         buttons.append([InlineKeyboardButton(btn_label, copy_text=CopyTextButton(text=formatted))])
 
     c.execute("UPDATE users SET total_orders = total_orders + ? WHERE user_id=?", (len(rows), user.id))
     conn.commit()
     conn.close()
 
-    buttons.append([InlineKeyboardButton("🔄 Change Number", callback_data=f"sel_c_{country_name}")])
-    buttons.append([InlineKeyboardButton("🌐 Change Country", callback_data="btn_back")])
-    buttons.append([InlineKeyboardButton("📨 OTP Group ↗", url=MY_OTP_GROUP_URL)])
+    buttons.append([
+        InlineKeyboardButton("🔄 Change Number", callback_data=f"chg_c_{country_name}"),
+        InlineKeyboardButton("🌐 Change Country", callback_data="btn_back")
+    ])
+    buttons.append([InlineKeyboardButton("📨 Live OTP Group ↗", url=MY_OTP_GROUP_URL)])
 
-    header_text = (
-        f"✨ <b>{info['flag']} {info['name']} • N U M B E R S</b> ✨\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⚡ <i>Click any number below to <b>Copy Instantly</b>:</i>"
+    card_text = (
+        f"╔══════════════════════════════════════╗\n"
+        f"║   👑 <b>PRINCE VIP OTP SYSTEM</b> 💬    ║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  🌍 <b>Country:</b> {info['flag']} <b>{info['name']} ({info['short']})</b>\n"
+        f"║  🟢 <b>Service:</b> <b>WhatsApp VIP</b>\n"
+        f"║  ⚡ <b>Status:</b> 📡 <i>Live & Waiting OTP</i>\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  📱 <b>ASSIGNED NUMBERS ({len(rows)}X):</b>\n"
+        f"║\n"
+        f"{num_list_text}"
+        f"║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  ✨ <i>১-ক্লিকে কপি করতে নিচের বাটনে চাপুন!</i> ║\n"
+        f"╚══════════════════════════════════════╝"
     )
 
-    await query.edit_message_text(header_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
+    await query.edit_message_text(card_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
 
 
 # ═══════════════════════════════════════════════
@@ -719,13 +788,24 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     total_countries = c.fetchone()[0]
     conn.close()
 
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM admins")
+    total_admins = c.fetchone()[0]
+    conn.close()
+
     text = (
-        f"<b>⚙️ Admin Control Panel</b>\n\n"
-        f"👥 Total Users : <b>{total_users}</b>\n"
-        f"🌍 Countries   : <b>{total_countries}</b>\n"
-        f"📱 Avail Stock : <b>{total_stock}</b> pcs\n\n"
-        f"📡 Target Group : <code>{TARGET_GROUP_ID}</code>\n"
-        f"📡 Source Group : <code>{SOURCE_GROUP_ID}</code>\n"
+        f"╔══════════════════════════════════════╗\n"
+        f"║    👑 <b>PRINCE OTP ADMIN HUD</b> ⚙️     ║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  👥 <b>Total Users:</b> <code>{total_users}</code>\n"
+        f"║  🌍 <b>Countries:</b> <code>{total_countries}</code>\n"
+        f"║  📱 <b>Available Stock:</b> <code>{total_stock} pcs</code>\n"
+        f"║  👑 <b>Active Admins:</b> <code>{total_admins}</code>\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  📡 <b>Source:</b> <code>{SOURCE_GROUP_ID}</code>\n"
+        f"║  🎯 <b>Target:</b> <code>{TARGET_GROUP_ID}</code>\n"
+        f"╚══════════════════════════════════════╝"
     )
 
     kb = [
@@ -802,7 +882,12 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data.startswith("sel_c_"):
         country_name = data.replace("sel_c_", "")
-        await assign_numbers_and_show(query, country_name, user)
+        await assign_numbers_and_show(query, country_name, user, is_change=False)
+        return
+
+    if data.startswith("chg_c_"):
+        country_name = data.replace("chg_c_", "")
+        await assign_numbers_and_show(query, country_name, user, is_change=True)
         return
 
     if data.startswith("copy_"):

@@ -189,21 +189,28 @@ async def send_to_target_group(raw_text: str, otp_code: str = None):
 async def send_otp_to_user_inbox(user_id: int, country_name: str, full_num: str, otp_code: str, now: str):
     """ইউজারের ইনবক্সে ওটিপি পাঠানো"""
     user_msg = (
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"  🔔 <b>NEW OTP RECEIVED!</b> 💎\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"📱 Service  : <b>WhatsApp</b>\n"
-        f"🌍 Country  : <b>{country_name}</b>\n"
-        f"📞 Number   : <code>{full_num}</code>\n\n"
-        f"🔑 <b>Your OTP Code:</b>\n"
-        f"👉 <code>{otp_code}</code> 👈\n\n"
-        f"⏰ Received: <b>{now}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━"
+        f"╔══════════════════════════════════════╗\n"
+        f"║   💎 <b>OTP RECEIVED SUCCESSFULLY!</b> 🔔   ║\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  📱 <b>Service:</b> <b>WhatsApp OTP VIP</b>\n"
+        f"║  🌍 <b>Country:</b> <b>{country_name}</b>\n"
+        f"║  📞 <b>Number:</b> <code>{full_num}</code>\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  🔑 <b>YOUR OTP CODE:</b>\n"
+        f"║  👉 <code>{otp_code}</code> 👈\n"
+        f"╠══════════════════════════════════════╣\n"
+        f"║  ⏰ <b>Time:</b> <code>{now}</code>\n"
+        f"║  ✨ <i>১-ক্লিকে কোডটি কপি করতে নিচের বাটনে চাপুন!</i>\n"
+        f"╚══════════════════════════════════════╝"
     )
     for b_token in [BOT_TOKEN, FORWARDER_BOT_TOKEN]:
         try:
             bot = Bot(token=b_token)
-            await bot.send_message(chat_id=user_id, text=user_msg, parse_mode="HTML")
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔑 📋 Copy OTP Code", copy_text=CopyTextButton(text=otp_code))],
+                [InlineKeyboardButton("🤖 Get More Numbers ↗", url=GET_NUMBER_URL)]
+            ])
+            await bot.send_message(chat_id=user_id, text=user_msg, parse_mode="HTML", reply_markup=keyboard)
             print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 🚀 OTP delivered to user inbox: {user_id}")
             return True
         except Exception as ex:
