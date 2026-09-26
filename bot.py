@@ -15,6 +15,12 @@ import datetime
 import logging
 import asyncio
 import time
+import io
+try:
+    import openpyxl
+    EXCEL_SUPPORTED = True
+except ImportError:
+    EXCEL_SUPPORTED = False
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, Bot, CopyTextButton
 from telegram.ext import (
     ApplicationBuilder,
@@ -811,9 +817,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         info = get_country_info(country)
         admin_states[user_id] = {'action': 'waiting_for_numbers', 'country': country}
         await query.message.reply_text(
-            f"📁 <b>{info['flag']} {country} এর জন্য নম্বর আপলোড করুন:</b>\n\n"
-            f"👉 আপনার <b>.txt ফাইল আপলোড করুন</b> অথবা নম্বরগুলো সরাসরি মেসেজে পাঠান (প্রতি লাইনে একটি নম্বর)।\n\n"
-            f"⚡ <i>বট স্বয়ংক্রিয়ভাবে ফাইল স্ক্যান করে ডুপ্লিকেট ও পূর্বে ব্যবহৃত নম্বর বাদ দিয়ে শুধু ফ্রেশ নম্বর যোগ করবে।</i>",
+            f"📁 <b>{info['flag']} {country} 에르 저 님버 아팼로드 하다를:</b>\n\n"
+            f"✅ <b>저 포르매트에 파트 핥할:</b>\n"
+            f"• 📄 <b>.txt 파일</b> — 하나도 하는니와 하나 님버\n"
+            f"• 📊 <b>.xlsx / .xls 파일</b> — ivasms Excel 시트 사단 니와 안다를\n"
+            f"• 📋 <b>.csv 파일</b> — 코마 모다 뉴라인 세파레이트드\n"
+            f"• ✏️ <b>사단를 타이플 하다를</b> — 하나도 하는니와 하나 님버 페스트 하다를\n\n"
+            f"⚡ <i>바트 스톤자동으로 사드 코맼 스캔 하여 포름 님버 설치는 모다 도플리케이트 뮣 하는니와 스통하는 기준시트 프레시 님버 실해하보사.</i>",
             parse_mode="HTML"
         )
         return
@@ -1090,11 +1100,44 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 if update.message.document:
                     file = await context.bot.get_file(update.message.document.file_id)
                     file_bytes = await file.download_as_bytearray()
-                    try:
-                        file_text = file_bytes.decode('utf-8')
-                    except Exception:
-                        file_text = file_bytes.decode('latin-1', errors='ignore')
-                    numbers_list = [n.strip() for n in file_text.splitlines() if n.strip()]
+                    file_name = (update.message.document.file_name or "").lower()
+
+                    # Excel ফাইল (.xlsx / .xls)
+                    if file_name.endswith(".xlsx") or file_name.endswith(".xls"):
+                        if not EXCEL_SUPPORTED:
+                            await status_msg.edit_text("⚠️ Excel সাপোর্টের জন্য openpyxl ইনস্টল করুন: pip install openpyxl")
+                            return
+                        import io as _io
+                        wb = openpyxl.load_workbook(_io.BytesIO(bytes(file_bytes)), data_only=True)
+                        for sheet in wb.worksheets:
+                            for row in sheet.iter_rows(values_only=True):
+                                for cell in row:
+                                    val = str(cell).strip() if cell is not None else ""
+                                    if re.search(r"\d{6,15}", val):
+                                        numbers_list.append(val)
+
+                    # CSV ফাইল
+                    elif file_name.endswith(".csv"):
+                        try:
+                            file_text = bytes(file_bytes).decode("utf-8")
+                        except Exception:
+                            file_text = bytes(file_bytes).decode("latin-1", errors="ignore")
+                        import csv, io as _io2
+                        reader = csv.reader(_io2.StringIO(file_text))
+                        for row in reader:
+                            for cell in row:
+                                cell = cell.strip()
+                                if re.search(r"\d{6,15}", cell):
+                                    numbers_list.append(cell)
+
+                    # TXT ফাইল বা অন্যান্য
+                    else:
+                        try:
+                            file_text = bytes(file_bytes).decode("utf-8")
+                        except Exception:
+                            file_text = bytes(file_bytes).decode("latin-1", errors="ignore")
+                        numbers_list = [n.strip() for n in file_text.splitlines() if n.strip()]
+
                 elif text:
                     numbers_list = [n.strip() for n in text.splitlines() if n.strip()]
             except Exception as ex:

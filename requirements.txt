@@ -1,3 +1,4 @@
 python-telegram-bot>=20.0
 curl_cffi>=0.16.0
 cloudscraper>=1.2.71
+openpyxl>=3.1.0
