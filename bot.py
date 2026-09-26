@@ -40,7 +40,7 @@ DB_NAME = 'otp_bot.db'
 BOT_TOKEN = "8920102269:AAFMCsOM9iBJx0lZMmlS-_nR6sqdyl3-MFs"
 FORWARDER_BOT_TOKEN = "8777573519:AAFpMkzgcb_IJR2K3EzmeYUXlxo1UP1iNis" # @mrprinceotps_bot (Admin in group)
 
-ADMIN_ID = 8828657233
+ADMIN_IDS = [8828657233, 7190342953, 6529326938]
 
 # গ্রুপ ও বাটন কনফিগারেশন
 MY_OTP_GROUP_URL = "https://t.me/+9svajLMOCMdhZTNl"
@@ -260,7 +260,7 @@ async def check_and_enforce_join(update: Update, context: ContextTypes.DEFAULT_T
     ইউজার সকল বাধ্যতামূলক চ্যানেল/গ্রুপে জয়েন করেছে কিনা তা চেক করা।
     জয়েন না করলে জয়েনিং বাটন দেখাবে এবং False রিটার্ন করবে।
     """
-    if user.id == ADMIN_ID:
+    if user.id in ADMIN_IDS:
         return True
 
     conn = get_db_connection()
@@ -681,7 +681,7 @@ async def handle_group_message_relay(context: ContextTypes.DEFAULT_TYPE, message
 # ═══════════════════════════════════════════════
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_user.id != ADMIN_ID:
+    if update.effective_user.id not in ADMIN_IDS:
         await update.message.reply_text("❌ Access Denied.")
         return
 
@@ -789,7 +789,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     # Admin options
-    if user_id != ADMIN_ID:
+    if user_id not in ADMIN_IDS:
         return
 
     if data == "admin_add_country":
