@@ -166,6 +166,16 @@ def setup_database():
         verified_at TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS admins (
+        user_id INTEGER PRIMARY KEY,
+        username TEXT DEFAULT '',
+        added_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
+    default_admins = [8828657233, 7190342953, 6529326938]
+    for aid in default_admins:
+        c.execute("INSERT OR IGNORE INTO admins (user_id, username) VALUES (?, 'Root Admin')", (aid,))
+
     # AUTO-MIGRATION
     c.execute("PRAGMA table_info(numbers)")
     cols = [column[1] for column in c.fetchall()]
@@ -192,6 +202,20 @@ def setup_database():
     conn.close()
 
 setup_database()
+
+
+def is_admin(user_id: int) -> bool:
+    if user_id in ADMIN_IDS:
+        return True
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT user_id FROM admins WHERE user_id=?", (user_id,))
+        row = c.fetchone()
+        conn.close()
+        return bool(row)
+    except Exception:
+        return False
 
 
 def ensure_user(user):
@@ -260,7 +284,7 @@ async def check_and_enforce_join(update: Update, context: ContextTypes.DEFAULT_T
     ইউজার সকল বাধ্যতামূলক চ্যানেল/গ্রুপে জয়েন করেছে কিনা তা চেক করা।
     জয়েন না করলে জয়েনিং বাটন দেখাবে এবং False রিটার্ন করবে।
     """
-    if user.id in ADMIN_IDS:
+    if is_admin(user.id):
         return True
 
     conn = get_db_connection()
@@ -681,7 +705,7 @@ async def handle_group_message_relay(context: ContextTypes.DEFAULT_TYPE, message
 # ═══════════════════════════════════════════════
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_user.id not in ADMIN_IDS:
+    if not is_admin(update.effective_user.id):
         await update.message.reply_text("❌ Access Denied.")
         return
 
@@ -711,8 +735,9 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
          InlineKeyboardButton("🗑️ Delete Country", callback_data="admin_del_country")],
         [InlineKeyboardButton("⚡ High Traffic Alert", callback_data="admin_traffic_alert"),
          InlineKeyboardButton("📢 Force Join Groups", callback_data="admin_force_join")],
-        [InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast"),
-         InlineKeyboardButton("🧪 Test OTP Push", callback_data="admin_test_otp")]
+        [InlineKeyboardButton("👑 Manage Admins", callback_data="admin_manage_admins"),
+         InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast")],
+        [InlineKeyboardButton("🧪 Test OTP Push", callback_data="admin_test_otp")]
     ]
     if update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
@@ -789,7 +814,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
 
     # Admin options
-    if user_id not in ADMIN_IDS:
+    if not is_admin(user_id):
         return
 
     if data == "admin_add_country":
@@ -990,6 +1015,91 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data == "admin_panel_back":
         await admin_panel(update, context)
+        return
+
+    if data == "admin_manage_admins":
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM admins")
+        total_a = c.fetchone()[0]
+        conn.close()
+
+        buttons = [
+            [InlineKeyboardButton("➕ Add Admin (User ID)", callback_data="admin_add_admin")],
+            [InlineKeyboardButton("📋 View All Admins", callback_data="admin_list_admins"),
+             InlineKeyboardButton("🗑️ Delete Admin", callback_data="admin_del_admin")],
+            [InlineKeyboardButton("🔙 Back to Admin", callback_data="admin_panel_back")]
+        ]
+        text = (
+            f"👑 <b>Admin Management Panel (অ্যাডমিন নিয়ন্ত্রণ)</b>\n\n"
+            f"বর্তমানে মোট <b>{total_a}</b> জন সক্রিয় অ্যাডমিন রয়েছে।\n\n"
+            f"নতুন কোনো ইউজারকে অ্যাডমিন বানাতে <b>➕ Add Admin</b> বাটনে চাপুন।"
+        )
+        await query.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
+        return
+
+    if data == "admin_add_admin":
+        admin_states[user_id] = {'action': 'waiting_for_admin_id'}
+        text = (
+            "👑 <b>নতুন অ্যাডমিন যুক্ত করুন:</b>\n\n"
+            "নতুন অ্যাডমিনের <b>Telegram User ID</b> লিখে পাঠান:\n\n"
+            "উদাহরণ:\n"
+            "<code>7190342953</code>"
+        )
+        await query.message.reply_text(text, parse_mode="HTML")
+        return
+
+    if data == "admin_list_admins":
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT user_id, username, added_at FROM admins ORDER BY user_id ASC")
+        admins = c.fetchall()
+        conn.close()
+
+        if not admins:
+            msg = "👑 কোনো অ্যাডমিন পাওয়া যায়নি।"
+        else:
+            msg = "<b>👑 Active Admins List:</b>\n\n"
+            for aid, uname, a_at in admins:
+                tag = " <i>(Root)</i>" if aid in [8828657233, 6529326938] else ""
+                msg += f"🔹 <b>ID:</b> <code>{aid}</code>{tag}\n"
+                if uname and uname != 'Admin':
+                    msg += f"   👤 {uname}\n"
+                msg += f"   🕐 {a_at}\n\n"
+
+        buttons = [[InlineKeyboardButton("🔙 Back", callback_data="admin_manage_admins")]]
+        await query.edit_message_text(msg, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
+        return
+
+    if data == "admin_del_admin":
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT user_id, username FROM admins ORDER BY user_id ASC")
+        admins = c.fetchall()
+        conn.close()
+
+        removable = [a for a in admins if a[0] not in [8828657233, 6529326938]]
+        if not removable:
+            await query.message.reply_text("❌ কোনো অতিরিক্ত অ্যাডমিন নেই যা ডিলিট করা সম্ভব (Root Admin ডিলিট করা যাবে না)।")
+            return
+
+        buttons = [[InlineKeyboardButton(f"❌ ID: {a[0]}", callback_data=f"del_adm_{a[0]}")] for a in removable]
+        buttons.append([InlineKeyboardButton("🔙 Back", callback_data="admin_manage_admins")])
+        await query.edit_message_text("🗑️ ডিলিট করতে অ্যাডমিন আইডির উপর ক্লিক করুন:", reply_markup=InlineKeyboardMarkup(buttons))
+        return
+
+    if data.startswith("del_adm_"):
+        del_aid = int(data.replace("del_adm_", ""))
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM admins WHERE user_id=?", (del_aid,))
+        conn.commit()
+        conn.close()
+        await query.edit_message_text(
+            f"✅ ইউজার আইডি <code>{del_aid}</code> কে অ্যাডমিন থেকে সফলভাবে মুছে ফেলা হয়েছে।",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="admin_manage_admins")]])
+        )
         return
 
     if data == "admin_broadcast":
@@ -1216,6 +1326,28 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if state['action'] == 'waiting_for_test_otp' and text:
             await handle_group_message_relay(context, update.message, text, source_chat_id=user_id)
             await update.message.reply_text("🧪 টেস্ট ওটিপি প্রসেস এবং ফরওয়ার্ড করা হয়েছে।")
+            del admin_states[user_id]
+            return
+
+        if state['action'] == 'waiting_for_admin_id' and text:
+            clean_id = clean_digits(text)
+            if clean_id and len(clean_id) >= 5:
+                try:
+                    new_aid = int(clean_id)
+                    conn = get_db_connection()
+                    c = conn.cursor()
+                    c.execute("INSERT OR REPLACE INTO admins (user_id, username, added_at) VALUES (?, 'Admin', datetime('now'))", (new_aid,))
+                    conn.commit()
+                    conn.close()
+                    await update.message.reply_text(
+                        f"✅ ইউজার আইডি <code>{new_aid}</code> সফলভাবে অ্যাডমিন হিসেবে যুক্ত হয়েছে!\n\n"
+                        f"এখন তিনি /admin কমান্ড দিয়ে সব কিছু অ্যাক্সেস করতে পারবেন।",
+                        parse_mode="HTML"
+                    )
+                except Exception as ex:
+                    await update.message.reply_text(f"⚠️ অ্যাডমিন যোগ করতে সমস্যা হয়েছে: {ex}")
+            else:
+                await update.message.reply_text("⚠️ সঠিক সংখ্যাসূচক Telegram User ID দিন (যেমন: <code>7190342953</code>)।", parse_mode="HTML")
             del admin_states[user_id]
             return
 
